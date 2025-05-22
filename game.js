@@ -23,6 +23,7 @@ window.addEventListener('load', function() {
         isPlaying: false
     };
     const MASTER_VOL = 0.2;
+
     function setupAudio() {
         if (audioCtx) return true; 
         try {
@@ -34,6 +35,7 @@ window.addEventListener('load', function() {
             return false;
         }
     }
+
     function playSound(soundName, vol) {
         if (isMuted || !audioCtx) return;
         vol = vol || {
@@ -119,7 +121,8 @@ window.addEventListener('load', function() {
             console.log("Sound failed to play: " + soundName);
         }
     }
-        function startBgMusic() {
+
+    function startBgMusic() {
         if (isMuted || !audioCtx || bgMusic.isPlaying) return;
         
         try {
@@ -162,6 +165,7 @@ window.addEventListener('load', function() {
             bgMusic.isPlaying = false;
         }
     }
+
     function stopBgMusic() {
         if (bgMusic.melodyTimeout) {
             clearTimeout(bgMusic.melodyTimeout);
@@ -178,8 +182,14 @@ window.addEventListener('load', function() {
         bgMusic.gainNode = null;
         bgMusic.isPlaying = false;
     }
+
     function toggleMute() {
         isMuted = !isMuted;
+        
+        const muteBtn = document.getElementById('btn-mute');
+        if (muteBtn) {
+            muteBtn.textContent = isMuted ? '🔇' : '🔊';
+        }
         
         if (isMuted) {
             stopBgMusic();
@@ -189,11 +199,103 @@ window.addEventListener('load', function() {
             }
         }
     }
+
+    const keys = {};
+    
     window.addEventListener('keydown', function(e) {
+        keys[e.key] = true;
         if (e.key.toLowerCase() === 'm') {
             toggleMute();
         }
     });
+    
+    window.addEventListener('keyup', function(e) {
+        keys[e.key] = false;
+    });
+    
+    function setupMobileControls() {
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnJump = document.getElementById('btn-jump');
+        const btnMute = document.getElementById('btn-mute');
+        
+        btnLeft.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            keys['ArrowLeft'] = true;
+        });
+        btnLeft.addEventListener('mouseup', function(e) {
+            e.preventDefault();
+            keys['ArrowLeft'] = false;
+        });
+        btnLeft.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            keys['ArrowLeft'] = true;
+        });
+        btnLeft.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            keys['ArrowLeft'] = false;
+        });
+        
+        btnRight.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            keys['ArrowRight'] = true;
+        });
+        btnRight.addEventListener('mouseup', function(e) {
+            e.preventDefault();
+            keys['ArrowRight'] = false;
+        });
+        btnRight.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            keys['ArrowRight'] = true;
+        });
+        btnRight.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            keys['ArrowRight'] = false;
+        });
+        
+        btnJump.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            keys['ArrowUp'] = true;
+        });
+        btnJump.addEventListener('mouseup', function(e) {
+            e.preventDefault();
+            keys['ArrowUp'] = false;
+        });
+        btnJump.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            keys['ArrowUp'] = true;
+        });
+        btnJump.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            keys['ArrowUp'] = false;
+        });
+        
+        btnMute.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            toggleMute();
+        });
+        btnMute.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            toggleMute();
+        });
+        
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.classList.contains('control-btn')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+    }
+    
+    setupMobileControls();
+
     const app = new PIXI.Application({
         width: config.width,
         height: config.height,
@@ -204,6 +306,7 @@ window.addEventListener('load', function() {
         sharedTicker: true
     });
     document.getElementById('game-container').appendChild(app.view);
+
     let player;
     let platforms = [];
     let coins = [];
@@ -216,14 +319,6 @@ window.addEventListener('load', function() {
     let isJumping = false;
     let onGround = false;
     let playerInvincible = false;
-    const keys = {};
-    window.addEventListener('keydown', function(e) {
-        keys[e.key] = true;
-    });
-    
-    window.addEventListener('keyup', function(e) {
-        keys[e.key] = false;
-    });
     
     function showMessage(text, duration = 2000) {
         const messageEl = document.getElementById('message');
@@ -234,13 +329,15 @@ window.addEventListener('load', function() {
             messageEl.style.display = 'none';
         }, duration);
     }
-        function checkCollision(a, b) {
+
+    function checkCollision(a, b) {
         return a.x < b.x + b.width &&
                a.x + a.width > b.x &&
                a.y < b.y + b.height &&
                a.y + a.height > b.y;
     }
-        function createPlayer() {
+
+    function createPlayer() {
         player = new PIXI.Graphics();
         player.beginFill(0xFF0000);
         player.drawRect(0, 0, 30, 50);
@@ -273,6 +370,7 @@ window.addEventListener('load', function() {
         coins.push(coin);
         return coin;
     }
+
     function createEnemy(x, y, platformIndex, speed = 1) {
         if (platformIndex >= platforms.length) {
             console.error("Invalid platform index:", platformIndex);
@@ -294,10 +392,12 @@ window.addEventListener('load', function() {
         enemies.push(enemy);
         return enemy;
     }
+
     function updateUI() {
         document.getElementById('ui-container').textContent = `Score: ${score} | Lives: ${lives}`;
         document.getElementById('level-indicator').textContent = `Level: ${currentLevel}`;
     }
+
     function createParticle(x, y, color, size, lifetime, velocityX, velocityY) {
         const particle = new PIXI.Graphics();
         particle.beginFill(color);
@@ -314,6 +414,7 @@ window.addEventListener('load', function() {
         particles.push(particle);
         return particle;
     }
+
     function createExplosion(x, y, color, count, size, spread) {
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -325,6 +426,7 @@ window.addEventListener('load', function() {
             createParticle(x, y, color, particleSize, lifetime, velocityX, velocityY);
         }
     }
+
     function deathEffect() {
         createExplosion(player.x + player.width/2, player.y + player.height/2, 0xFF0000, 50, 5, 5);
         player.alpha = 0;
@@ -336,14 +438,17 @@ window.addEventListener('load', function() {
             }, 1000);
         }, 1000);
     }
+
     function coinEffect(x, y) {
         createExplosion(x, y, 0xFFD700, 20, 3, 3);
         showFloatingText('+10', x, y, 0xFFD700);
     }
+
     function enemyDefeatEffect(x, y) {
         createExplosion(x, y, 0x00AA00, 30, 4, 4);
         showFloatingText('+20', x, y, 0x00FF00);
     }
+
     function winEffect() {
         for (let i = 0; i < 10; i++) {
             setTimeout(() => {
@@ -353,6 +458,7 @@ window.addEventListener('load', function() {
             }, i * 200);
         }
     }
+
     function showFloatingText(text, x, y, color) {
         const style = new PIXI.TextStyle({
             fontFamily: 'Arial',
@@ -380,10 +486,10 @@ window.addEventListener('load', function() {
         
         if (currentLevel === 1) {
             spawnX = 100;
-            spawnY = 300; 
+            spawnY = config.height - 100;
         } else {
             spawnX = 150; 
-            spawnY = 300; 
+            spawnY = config.height - 100;
         }
         
         player.x = spawnX;
@@ -393,293 +499,292 @@ window.addEventListener('load', function() {
         isJumping = false;
     }
     
-function buildLevel1() {
-    createPlatform(100, 350, 120, 20);
-    createPlatform(300, 320, 150, 20);
-    createPlatform(500, 300, 100, 20);
-    createPlatform(650, 250, 150, 20);
-    createPlatform(400, 220, 120, 20);
-    createPlatform(200, 180, 150, 20);
-    createPlatform(0, 200, 80, 20);
-    createPlatform(550, 150, 90, 20);
+    function buildLevel1() {
+        createPlatform(100, 350, 120, 20);
+        createPlatform(300, 320, 150, 20);
+        createPlatform(500, 300, 100, 20);
+        createPlatform(650, 250, 150, 20);
+        createPlatform(400, 220, 120, 20);
+        createPlatform(200, 180, 150, 20);
+        createPlatform(0, 200, 80, 20);
+        createPlatform(550, 150, 90, 20);
 
-    createCoin(150, 330);
-    createCoin(350, 300);
-    createCoin(550, 280);
-    createCoin(700, 230);
-    createCoin(450, 200);
-    createCoin(250, 160);
-    createCoin(30, 180);
-    createCoin(580, 130);
+        createCoin(150, 330);
+        createCoin(350, 300);
+        createCoin(550, 280);
+        createCoin(700, 230);
+        createCoin(450, 200);
+        createCoin(250, 160);
+        createCoin(30, 180);
+        createCoin(580, 130);
 
-    createEnemy(150, 0, 1, 1.0);
-    createEnemy(350, 0, 2, 0.8);
-    createEnemy(700, 0, 4, 0.9);
-}
-
-function buildLevel2() {
-    createPlatform(50, 370, 100, 20);
-    createPlatform(200, 340, 120, 20);
-    createPlatform(370, 310, 90, 20);
-    createPlatform(500, 280, 110, 20);
-    createPlatform(650, 310, 140, 20);
-    createPlatform(730, 220, 70, 20);
-    createPlatform(550, 180, 130, 20);
-    createPlatform(380, 180, 120, 20);
-    createPlatform(230, 180, 100, 20);
-    createPlatform(50, 220, 150, 20);
-    createPlatform(0, 300, 70, 20);
-    createPlatform(100, 150, 80, 20);
-
-    createCoin(80, 350);
-    createCoin(230, 320);
-    createCoin(400, 290);
-    createCoin(530, 260);
-    createCoin(700, 290);
-    createCoin(750, 200);
-    createCoin(600, 160);
-    createCoin(420, 160);
-    createCoin(260, 160);
-    createCoin(100, 200);
-    createCoin(30, 280);
-    createCoin(130, 130);
-
-    createEnemy(120, 0, 1, 1.2);
-    createEnemy(230, 0, 2, 1.0);
-    createEnemy(700, 0, 5, 0.8);
-    createEnemy(600, 0, 7, 1.1);
-    createEnemy(120, 0, 10, 0.9);
-}
-
-function resetLevel() {
-    while(gameContainer.children.length > 0) {
-        gameContainer.removeChildAt(0);
-    }
-    platforms = [];
-    coins = [];
-    enemies = [];
-    while(effectsContainer.children.length > 0) {
-        effectsContainer.removeChildAt(0);
-    }
-    particles = [];
-
-    if (currentLevel === 1) {
-        app.renderer.backgroundColor = 0x87CEEB;
-    } else {
-        app.renderer.backgroundColor = 0x6A0DAD;
+        createEnemy(150, 0, 1, 1.0);
+        createEnemy(350, 0, 2, 0.8);
+        createEnemy(700, 0, 4, 0.9);
     }
 
-    createPlayer();
-    createPlatform(0, config.height - 50, config.width, 50);
+    function buildLevel2() {
+        createPlatform(50, 370, 100, 20);
+        createPlatform(200, 340, 120, 20);
+        createPlatform(370, 310, 90, 20);
+        createPlatform(500, 280, 110, 20);
+        createPlatform(650, 310, 140, 20);
+        createPlatform(730, 220, 70, 20);
+        createPlatform(550, 180, 130, 20);
+        createPlatform(380, 180, 120, 20);
+        createPlatform(230, 180, 100, 20);
+        createPlatform(50, 220, 150, 20);
+        createPlatform(0, 300, 70, 20);
+        createPlatform(100, 150, 80, 20);
 
-    if (currentLevel === 1) {
-        buildLevel1();
-    } else if (currentLevel === 2) {
-        buildLevel2();
+        createCoin(80, 350);
+        createCoin(230, 320);
+        createCoin(400, 290);
+        createCoin(530, 260);
+        createCoin(700, 290);
+        createCoin(750, 200);
+        createCoin(600, 160);
+        createCoin(420, 160);
+        createCoin(260, 160);
+        createCoin(100, 200);
+        createCoin(30, 280);
+        createCoin(130, 130);
+
+        createEnemy(120, 0, 1, 1.2);
+        createEnemy(230, 0, 2, 1.0);
+        createEnemy(700, 0, 5, 0.8);
+        createEnemy(600, 0, 7, 1.1);
+        createEnemy(120, 0, 10, 0.9);
     }
 
-    resetPlayerPosition();
-    updateUI();
-}
+    function resetLevel() {
+        while(gameContainer.children.length > 0) {
+            gameContainer.removeChildAt(0);
+        }
+        platforms = [];
+        coins = [];
+        enemies = [];
+        while(effectsContainer.children.length > 0) {
+            effectsContainer.removeChildAt(0);
+        }
+        particles = [];
 
-function nextLevel() {
-    winEffect();
-    playSound('levelComplete');
-    currentLevel++;
+        if (currentLevel === 1) {
+            app.renderer.backgroundColor = 0x87CEEB;
+        } else {
+            app.renderer.backgroundColor = 0x6A0DAD;
+        }
 
-    if (currentLevel > 2) {
-        showMessage("YOU WIN!", 3000);
+        createPlayer();
+        createPlatform(0, config.height - 50, config.width, 50);
+
+        if (currentLevel === 1) {
+            buildLevel1();
+        } else if (currentLevel === 2) {
+            buildLevel2();
+        }
+
+        resetPlayerPosition();
+        updateUI();
+    }
+
+    function nextLevel() {
+        winEffect();
+        playSound('levelComplete');
+        currentLevel++;
+
+        if (currentLevel > 2) {
+            showMessage("YOU WIN!", 3000);
+            setTimeout(() => {
+                alert("Congratulations! You completed the game!\nFinal Score: " + score);
+                currentLevel = 1;
+                score = 0;
+                resetLevel();
+            }, 3000);
+        } else {
+            showMessage("LEVEL " + currentLevel, 2000);
+            app.ticker.stop();
+            setTimeout(function() {
+                resetLevel();
+                app.ticker.start();
+            }, 2000);
+        }
+    }
+
+    function gameOver() {
+        isGameOver = true;
+        showMessage("GAME OVER", 3000);
+        playSound('gameOver');
+
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+                createExplosion(
+                    player.x + player.width/2 + (Math.random() * 40 - 20),
+                    player.y + player.height/2 + (Math.random() * 40 - 20),
+                    0xFF0000,
+                    30,
+                    5,
+                    4
+                );
+            }, i * 200);
+        }
+
         setTimeout(() => {
-            alert("Congratulations! You completed the game!\nFinal Score: " + score);
-            currentLevel = 1;
+            lives = 3;
             score = 0;
+            currentLevel = 1;
+            isGameOver = false;
             resetLevel();
         }, 3000);
-    } else {
-        showMessage("LEVEL " + currentLevel, 2000);
-        app.ticker.stop();
-        setTimeout(function() {
-            resetLevel();
-            app.ticker.start();
-        }, 2000);
-    }
-}
-
-function gameOver() {
-    isGameOver = true;
-    showMessage("GAME OVER", 3000);
-    playSound('gameOver');
-
-    for (let i = 0; i < 5; i++) {
-        setTimeout(() => {
-            createExplosion(
-                player.x + player.width/2 + (Math.random() * 40 - 20),
-                player.y + player.height/2 + (Math.random() * 40 - 20),
-                0xFF0000,
-                30,
-                5,
-                4
-            );
-        }, i * 200);
     }
 
-    setTimeout(() => {
-        lives = 3;
-        score = 0;
-        currentLevel = 1;
-        isGameOver = false;
-        resetLevel();
-    }, 3000);
-}
+    app.ticker.add(function(delta) {
+        if (isGameOver) return;
 
-app.ticker.add(function(delta) {
-    if (isGameOver) return;
-
-    for (let i = 0; i < particles.length; i++) {
-        const particle = particles[i];
-        particle.x += particle.velocityX;
-        particle.y += particle.velocityY;
-        particle.lifetime -= 1;
-        particle.alpha = particle.lifetime / particle.maxLifetime;
-        if (particle.lifetime <= 0) {
-            effectsContainer.removeChild(particle);
-            particles.splice(i, 1);
-            i--;
-        }
-    }
-
-    if (playerInvincible && player.alpha === 0) return;
-
-    playerVelocity.y += config.gravity;
-    if (playerVelocity.y > config.maxFallSpeed) {
-        playerVelocity.y = config.maxFallSpeed;
-    }
-
-    playerVelocity.x = 0;
-    if (keys["ArrowLeft"]) {
-        playerVelocity.x = -config.playerSpeed;
-    }
-    if (keys["ArrowRight"]) {
-        playerVelocity.x = config.playerSpeed;
-    }
-
-    player.x += playerVelocity.x;
-    player.y += playerVelocity.y;
-
-    if (player.x < 0) {
-        player.x = 0;
-    } else if (player.x > config.width - player.width) {
-        player.x = config.width - player.width;
-    }
-
-    onGround = false;
-
-    for (let i = 0; i < platforms.length; i++) {
-        const platform = platforms[i];
-        if (playerVelocity.y > 0 &&
-            player.y + player.height >= platform.y &&
-            player.y + player.height <= platform.y + platform.height &&
-            player.x + player.width > platform.x &&
-            player.x < platform.x + platform.width) {
-            player.y = platform.y - player.height;
-            playerVelocity.y = 0;
-            onGround = true;
-            isJumping = false;
-        }
-    }
-
-    if (keys["ArrowUp"] && !isJumping && onGround) {
-        playerVelocity.y = -config.jumpForce;
-        isJumping = true;
-        playSound('jump');
-    }
-
-    if (player.y > config.height) {
-        lives--;
-        updateUI();
-        if (lives <= 0) {
-            gameOver();
-        } else {
-            deathEffect();
-            resetPlayerPosition();
-            playSound('death');
-        }
-    }
-
-    if (playerInvincible) return;
-
-    for (let i = 0; i < enemies.length; i++) {
-        const enemy = enemies[i];
-        if (!enemy || !enemy.platform) continue;
-
-        enemy.x += enemy.speed * enemy.direction;
-
-        if (enemy.x <= enemy.platform.x) {
-            enemy.x = enemy.platform.x;
-            enemy.direction = 1;
-        } else if (enemy.x + enemy.width >= enemy.platform.x + enemy.platform.width) {
-            enemy.x = enemy.platform.x + enemy.platform.width - enemy.width;
-            enemy.direction = -1;
-        }
-
-        enemy.y = enemy.platform.y - enemy.height;
-
-        if (checkCollision(player, enemy)) {
-            if (playerVelocity.y > 0 && player.y < enemy.y) {
-                enemyDefeatEffect(enemy.x + enemy.width/2, enemy.y);
-                gameContainer.removeChild(enemy);
-                enemies.splice(i, 1);
+        for (let i = 0; i < particles.length; i++) {
+            const particle = particles[i];
+            particle.x += particle.velocityX;
+            particle.y += particle.velocityY;
+            particle.lifetime -= 1;
+            particle.alpha = particle.lifetime / particle.maxLifetime;
+            if (particle.lifetime <= 0) {
+                effectsContainer.removeChild(particle);
+                particles.splice(i, 1);
                 i--;
-                playerVelocity.y = -config.jumpForce * 0.6;
-                score += 20;
-                updateUI();
-                playSound('defeat');
+            }
+        }
+
+        if (playerInvincible && player.alpha === 0) return;
+
+        playerVelocity.y += config.gravity;
+        if (playerVelocity.y > config.maxFallSpeed) {
+            playerVelocity.y = config.maxFallSpeed;
+        }
+
+        playerVelocity.x = 0;
+        if (keys["ArrowLeft"]) {
+            playerVelocity.x = -config.playerSpeed;
+        }
+        if (keys["ArrowRight"]) {
+            playerVelocity.x = config.playerSpeed;
+        }
+
+        player.x += playerVelocity.x;
+        player.y += playerVelocity.y;
+
+        if (player.x < 0) {
+            player.x = 0;
+        } else if (player.x > config.width - player.width) {
+            player.x = config.width - player.width;
+        }
+
+        onGround = false;
+
+        for (let i = 0; i < platforms.length; i++) {
+            const platform = platforms[i];
+            if (playerVelocity.y > 0 &&
+                player.y + player.height >= platform.y &&
+                player.y + player.height <= platform.y + platform.height &&
+                player.x + player.width > platform.x &&
+                player.x < platform.x + platform.width) {
+                player.y = platform.y - player.height;
+                playerVelocity.y = 0;
+                onGround = true;
+                isJumping = false;
+            }
+        }
+
+        if (keys["ArrowUp"] && !isJumping && onGround) {
+            playerVelocity.y = -config.jumpForce;
+            isJumping = true;
+            playSound('jump');
+        }
+
+        if (player.y > config.height) {
+            lives--;
+            updateUI();
+            if (lives <= 0) {
+                gameOver();
             } else {
-                lives--;
-                updateUI();
-                if (lives <= 0) {
-                    gameOver();
+                deathEffect();
+                resetPlayerPosition();
+                playSound('death');
+            }
+        }
+
+        if (playerInvincible) return;
+
+        for (let i = 0; i < enemies.length; i++) {
+            const enemy = enemies[i];
+            if (!enemy || !enemy.platform) continue;
+
+            enemy.x += enemy.speed * enemy.direction;
+
+            if (enemy.x <= enemy.platform.x) {
+                enemy.x = enemy.platform.x;
+                enemy.direction = 1;
+            } else if (enemy.x + enemy.width >= enemy.platform.x + enemy.platform.width) {
+                enemy.x = enemy.platform.x + enemy.platform.width - enemy.width;
+                enemy.direction = -1;
+            }
+
+            enemy.y = enemy.platform.y - enemy.height;
+
+            if (checkCollision(player, enemy)) {
+                if (playerVelocity.y > 0 && player.y < enemy.y) {
+                    enemyDefeatEffect(enemy.x + enemy.width/2, enemy.y);
+                    gameContainer.removeChild(enemy);
+                    enemies.splice(i, 1);
+                    i--;
+                    playerVelocity.y = -config.jumpForce * 0.6;
+                    score += 20;
+                    updateUI();
+                    playSound('defeat');
                 } else {
-                    deathEffect();
-                    resetPlayerPosition();
-                    playSound('death');
+                    lives--;
+                    updateUI();
+                    if (lives <= 0) {
+                        gameOver();
+                    } else {
+                        deathEffect();
+                        resetPlayerPosition();
+                        playSound('death');
+                    }
                 }
             }
         }
-    }
 
-    for (let i = 0; i < coins.length; i++) {
-        if (checkCollision(player, coins[i])) {
-            coinEffect(coins[i].x, coins[i].y);
-            gameContainer.removeChild(coins[i]);
-            coins.splice(i, 1);
-            i--;
-            score += 10;
-            updateUI();
-            playSound('coin');
-            if (coins.length === 0) {
-                nextLevel();
+        for (let i = 0; i < coins.length; i++) {
+            if (checkCollision(player, coins[i])) {
+                coinEffect(coins[i].x, coins[i].y);
+                gameContainer.removeChild(coins[i]);
+                coins.splice(i, 1);
+                i--;
+                score += 10;
+                updateUI();
+                playSound('coin');
+                if (coins.length === 0) {
+                    nextLevel();
+                }
             }
         }
-    }
-});
+    });
 
-resetLevel();
-showMessage("LEVEL 1", 2000);
+    resetLevel();
+    showMessage("LEVEL 1", 2000);
 
-document.addEventListener('click', function resumeAudio() {
-    if (setupAudio()) {
-        if (audioCtx.state === 'suspended') {
-                audioCtx.resume().then(() => {
-                    if (!isMuted) {
-                        startBgMusic();
-                    }
-                });
-            } else if (!isMuted) {
-                startBgMusic();
+    document.addEventListener('click', function resumeAudio() {
+        if (setupAudio()) {
+            if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        if (!isMuted) {
+                            startBgMusic();
+                        }
+                    });
+                } else if (!isMuted) {
+                    startBgMusic();
+                }
             }
-        }
-        document.removeEventListener('click', resumeAudio);
-    }, { once: true });
+            document.removeEventListener('click', resumeAudio);
+        }, { once: true });
 });
-
